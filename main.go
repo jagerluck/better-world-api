@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 
@@ -10,20 +11,19 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+
+	"github.com/joho/godotenv"
 )
 
 var (
-	s3session *s3.S3
-)
-
-const (
-	BUCKET_NAME = "mathis123"
-	REGION      = "eu-central-1"
+	s3session    *s3.S3
+	s3BucketName = os.Getenv("S3_BUCKET")
+	awsRegion    = os.Getenv("AWS_REGION") // TODO: s3 bucket setup
 )
 
 func init() {
 	s3session = s3.New(session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(REGION),
+		Region: aws.String(awsRegion),
 	})))
 }
 
@@ -40,9 +40,9 @@ func createBucket() (resp *s3.CreateBucketOutput) {
 	resp, err := s3session.CreateBucket(&s3.CreateBucketInput{
 		// ACL: aws.String(s3.BucketCannedACLPrivate),
 		// ACL: aws.String(s3.BucketCannedACLPublicRead),
-		Bucket: aws.String(BUCKET_NAME),
+		Bucket: aws.String(s3BucketName),
 		CreateBucketConfiguration: &s3.CreateBucketConfiguration{
-			LocationConstraint: aws.String(REGION),
+			LocationConstraint: aws.String(awsRegion),
 		},
 	})
 	if err != nil {
@@ -71,7 +71,7 @@ func uploadObject(filename string) (resp *s3.PutObjectOutput) {
 	fmt.Println("Uploading:", filename)
 	resp, err = s3session.PutObject(&s3.PutObjectInput{
 		Body:   f,
-		Bucket: aws.String(BUCKET_NAME),
+		Bucket: aws.String(s3BucketName),
 		Key:    aws.String(strings.Split(filename, "/")[1]),
 		ACL:    aws.String(s3.BucketCannedACLPublicRead),
 	})
@@ -85,10 +85,11 @@ func uploadObject(filename string) (resp *s3.PutObjectOutput) {
 
 func listObjects() (resp *s3.ListObjectsV2Output) {
 	resp, err := s3session.ListObjectsV2(&s3.ListObjectsV2Input{
-		Bucket: aws.String(BUCKET_NAME),
+		Bucket: aws.String(s3BucketName),
 	})
 
 	if err != nil {
+		println("something bad happened 1")
 		panic(err)
 	}
 
@@ -99,7 +100,7 @@ func getObject(filename string) {
 	fmt.Println("Downloading: ", filename)
 
 	resp, err := s3session.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(BUCKET_NAME),
+		Bucket: aws.String(s3BucketName),
 		Key:    aws.String(filename),
 	})
 
@@ -117,7 +118,7 @@ func getObject(filename string) {
 func deleteObject(filename string) (resp *s3.DeleteObjectOutput) {
 	fmt.Println("Deleting: ", filename)
 	resp, err := s3session.DeleteObject(&s3.DeleteObjectInput{
-		Bucket: aws.String(BUCKET_NAME),
+		Bucket: aws.String(s3BucketName),
 		Key:    aws.String(filename),
 	})
 
@@ -128,7 +129,13 @@ func deleteObject(filename string) (resp *s3.DeleteObjectOutput) {
 	return resp
 }
 
+// ------- main
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	folder := "files"
 
 	files, _ := ioutil.ReadDir(folder)

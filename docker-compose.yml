@@ -1,7 +1,6 @@
-# Specify the version for docker-compose.yml
+# version for docker-compose.yml
 version: "3.8"
 
-# add the serivces needed (postgres,go)
 services:
   main-db:
     container_name: go-postgres
