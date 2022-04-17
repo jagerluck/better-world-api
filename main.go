@@ -9,7 +9,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 
 	"github.com/joho/godotenv"
@@ -18,14 +17,14 @@ import (
 var (
 	s3session    *s3.S3
 	s3BucketName = os.Getenv("S3_BUCKET")
-	awsRegion    = os.Getenv("AWS_REGION") // TODO: s3 bucket setup
+	awsRegion    = os.Getenv("AWS_REGION")
 )
 
-func init() {
-	s3session = s3.New(session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(awsRegion),
-	})))
-}
+// func init() {
+// 	s3session = s3.New(session.Must(session.NewSession(&aws.Config{
+// 		Region: aws.String(awsRegion),
+// 	})))
+// }
 
 func listBuckets() (resp *s3.ListBucketsOutput) {
 	resp, err := s3session.ListBuckets(&s3.ListBucketsInput{})
