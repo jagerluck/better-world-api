@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/gorilla/mux"
 
 	"github.com/joho/godotenv"
 )
@@ -20,11 +22,7 @@ var (
 	awsRegion    = os.Getenv("AWS_REGION")
 )
 
-// func init() {
-// 	s3session = s3.New(session.Must(session.NewSession(&aws.Config{
-// 		Region: aws.String(awsRegion),
-// 	})))
-// }
+// TODO: role access
 
 func listBuckets() (resp *s3.ListBucketsOutput) {
 	resp, err := s3session.ListBuckets(&s3.ListBucketsInput{})
@@ -128,31 +126,48 @@ func deleteObject(filename string) (resp *s3.DeleteObjectOutput) {
 	return resp
 }
 
-// ------- main
+// 🚅 🚅 🚅 🚅 MAIN
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	folder := "files"
+	a := App{}
+	a.Initialize(
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_NAME"))
 
-	files, _ := ioutil.ReadDir(folder)
-	fmt.Println(files)
-	for _, file := range files {
-		if file.IsDir() {
-			continue
-		} else {
-			uploadObject(folder + "/" + file.Name())
-		}
-	}
+	r := mux.NewRouter()
+	r.HandleFunc("/", HomeHandler)
+	r.HandleFunc("/products", ProductsHandler)
+	r.HandleFunc("/articles", ArticlesHandler)
+	http.Handle("/", r)
 
-	fmt.Println(listObjects())
+	// folder := "files"
 
-	for _, object := range listObjects().Contents {
-		getObject(*object.Key)
-		deleteObject(*object.Key)
-	}
+	// files, _ := ioutil.ReadDir(folder)
+	// fmt.Println(files)
+	// for _, file := range files {
+	// 	if file.IsDir() {
+	// 		continue
+	// 	} else {
+	// 		uploadObject(folder + "/" + file.Name())
+	// 	}
+	// }
 
-	fmt.Println(listObjects())
+	// for _, object := range listObjects().Contents {
+	// 	getObject(*object.Key)
+	// 	deleteObject(*object.Key)
+	// }
+
+	// fmt.Println(listObjects())
 }
+
+// // https://www.youtube.com/watch?v=fEVRl9MLJC0
+// func init() {
+// 	s3session = s3.New(session.Must(session.NewSession(&aws.Config{
+// 		Region: aws.String(awsRegion),
+// 	})))
+// }
