@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"reflect"
 	"time"
 	// "errors"
 )
@@ -39,39 +40,54 @@ func getPins(db *sql.DB, order string) ([]pin, error) {
 	return pins, nil
 }
 
-//  // fails
-// func (p *pin) getPin(db *sql.DB) error {
-// 	return db.QueryRow(`
-// 	SELECT address FROM pin
-// 	LEFT JOIN pin_photo AS pp
-// 	LEFT JOIN pin_video AS pv
-// 	ON pp.fk_pin_id = pv.fk_pin_id
-// 	WHERE id=$1
-// 	`, p.ID)
-// }
+func getPin(db *sql.DB) (p *pin) {
+	err := db.QueryRow(`
+	SELECT address FROM pin
+	LEFT JOIN pin_photo AS pp
+	LEFT JOIN pin_video AS pv
+	ON pp.fk_pin_id = pv.fk_pin_id
+	WHERE id=$1
+	`, p.ID).Scan(p)
 
-// func (p *product) updatePin(db *sql.DB) error {
-// 	_, err :=
-// 		db.Exec("UPDATE pin SET name=$1, price=$2 WHERE id=$3",
-// 			p.Name, p.Price, p.ID)
+	if err != nil {
+		panic(err)
+	}
 
-// 	return err
-// }
+	return p
+}
 
-// func (p *product) deletePin(db *sql.DB) error {
-// 	_, err := db.Exec("DELETE FROM products WHERE id=$1", p.ID)
+func (p *pin) updatePin(db *sql.DB) error {
+	fields := reflect.VisibleFields(p)
+	var updateStr string
+	for _, f := range fields {
 
-// 	return err
-// }
+	}
+	_, err := db.Exec(`UPDATE pin SET name=$1, price=$2 WHERE id=$3`,
+		p.Name, p.Price, p.ID)
 
-// func (p *product) createPin(db *sql.DB) error {
-// 	err := db.QueryRow(
-// 		"INSERT INTO products(name, price) VALUES($1, $2) RETURNING id",
-// 		p.Name, p.Price).Scan(&p.ID)
+	if err != nil {
+		panic(err)
+	}
 
-// 	if err != nil {
-// 		return err
-// 	}
+	return p
+}
 
-// 	return nil
-// }
+func (p *pin) deletePin(db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM products WHERE id=$1", p.ID)
+
+	return err
+}
+
+func (p *pin) createPin(db *sql.DB) error {
+	// err := db.QueryRow(
+	// 	"INSERT INTO products(name, price) VALUES($1, $2) RETURNING id",
+	// 	p.Name, p.Price).Scan(&p.ID)
+
+	createdPin := db(p)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
